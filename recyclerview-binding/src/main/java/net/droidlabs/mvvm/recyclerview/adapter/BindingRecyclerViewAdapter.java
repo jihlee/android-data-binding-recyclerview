@@ -7,7 +7,10 @@ import android.databinding.ViewDataBinding;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
+
+import net.droidlabs.mvvm.recyclerview.ItemClickListener;
 import net.droidlabs.mvvm.recyclerview.adapter.binder.ItemBinder;
 
 import java.lang.ref.WeakReference;
@@ -17,13 +20,15 @@ public class BindingRecyclerViewAdapter<T> extends RecyclerView.Adapter<BindingR
 {
     private final WeakReferenceOnListChangedCallback onListChangedCallback;
     private final ItemBinder<T> itemBinder;
+    private final ItemClickListener itemClickListener;
     private ObservableList<T> items;
     private LayoutInflater inflater;
 
-    public BindingRecyclerViewAdapter(ItemBinder<T> itemBinder, @Nullable Collection<T> items)
+    public BindingRecyclerViewAdapter(ItemBinder<T> itemBinder, @Nullable Collection<T> items, ItemClickListener itemClickListener)
     {
         this.itemBinder = itemBinder;
         this.onListChangedCallback = new WeakReferenceOnListChangedCallback<>(this);
+        this.itemClickListener = itemClickListener;
         setItems(items);
     }
 
@@ -81,7 +86,7 @@ public class BindingRecyclerViewAdapter<T> extends RecyclerView.Adapter<BindingR
         }
 
         ViewDataBinding binding = DataBindingUtil.inflate(inflater, layoutId, viewGroup, false);
-        return new ViewHolder(binding);
+        return new ViewHolder(binding, itemClickListener);
     }
 
     @Override
@@ -104,14 +109,28 @@ public class BindingRecyclerViewAdapter<T> extends RecyclerView.Adapter<BindingR
         return items == null ? 0 : items.size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder
-    {
+    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         final ViewDataBinding binding;
+        private final ItemClickListener itemClickListener;
 
-        ViewHolder(ViewDataBinding binding)
+        ViewHolder(ViewDataBinding binding, ItemClickListener itemClickListener)
         {
             super(binding.getRoot());
             this.binding = binding;
+            this.itemClickListener = itemClickListener;
+            this.binding.getRoot().setOnClickListener(this);
+            this.binding.getRoot().setOnLongClickListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            itemClickListener.onClick(v, this.getAdapterPosition(), false);
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            itemClickListener.onClick(v, this.getAdapterPosition(), true);
+            return true;
         }
     }
 
